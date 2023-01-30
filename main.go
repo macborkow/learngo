@@ -3,19 +3,31 @@ package main
 import (
   "fmt"
   "net/http"
+
+  "github.com/gorilla/mux"
 )
 
 func main() {
-  http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+  r := mux.NewRouter()
+
+  r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
     fmt.Fprintf(w, "Your request: %s\n", r.URL.Path)
   })
 
-  http.HandleFunc("/hello", func(w http.ResponseWriter, r *http.Request) {
+  r.HandleFunc("/hello", func(w http.ResponseWriter, r *http.Request) {
     fmt.Fprintf(w, "hello there!")
   })
 
-  fs := http.FileServer(http.Dir("static/"))
-  http.Handle("/static/", http.StripPrefix("/static/", fs))
+  r.HandleFunc("/books/{title}/page/{page}", func(w http.ResponseWriter, r *http.Request) {
+    vars := mux.Vars(r)
+    title := vars["title"]
+    page := vars["page"]
 
-  http.ListenAndServe(":1234", nil)
+    fmt.Fprintf(w, "You requested book %s on page %s.\n", title, page)
+  })
+
+  fs := http.FileServer(http.Dir("static/"))
+  r.Handle("/static/", http.StripPrefix("/static/", fs))
+
+  http.ListenAndServe(":1234", r)
 }
